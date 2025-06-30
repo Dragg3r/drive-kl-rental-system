@@ -114,7 +114,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     { name: 'paymentProof', maxCount: 1 }
   ]), async (req, res) => {
     try {
-      const rentalData = insertRentalSchema.parse(req.body);
+      // Transform form data to match schema expectations
+      const transformedData = {
+        ...req.body,
+        customerId: parseInt(req.body.customerId),
+        fuelLevel: parseInt(req.body.fuelLevel),
+        totalDays: parseInt(req.body.totalDays),
+        startDate: new Date(req.body.startDate),
+        endDate: new Date(req.body.endDate),
+        rentalPerDay: req.body.rentalPerDay,
+        deposit: req.body.deposit,
+        discount: req.body.discount || "0",
+        grandTotal: req.body.grandTotal
+      };
+      
+      console.log("Transformed rental data:", transformedData);
       const files = req.files as { [fieldname: string]: Express.Multer.File[] };
 
       // Vehicle photos are now optional
@@ -154,7 +168,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const rental = await storage.createRental({
-        ...rentalData,
+        ...transformedData,
         vehiclePhotos,
         paymentProofUrl,
         signatureUrl,
