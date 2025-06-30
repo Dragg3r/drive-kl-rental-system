@@ -22,13 +22,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/backups', express.static(path.join(process.cwd(), 'backups')));
 
   // Customer Registration
-  app.post("/api/customers/register", upload.single('icPassport'), async (req, res) => {
+  app.post("/api/customers/register", upload.fields([
+    { name: 'icPassport', maxCount: 1 },
+    { name: 'utilityBill', maxCount: 1 }
+  ]), async (req, res) => {
     try {
       // Validate only the required fields from the request body
-      const { fullName, email, hashedPassword, phone, address, icPassportNumber } = req.body;
+      const { fullName, email, hashedPassword, phone, address, icPassportNumber, socialMediaHandle } = req.body;
+      const files = req.files as { [fieldname: string]: Express.Multer.File[] };
       
-      if (!req.file) {
+      if (!files?.icPassport?.[0]) {
         return res.status(400).json({ message: "IC/Passport image is required" });
+      }
+
+      if (!files?.utilityBill?.[0]) {
+        return res.status(400).json({ message: "Utility bill image is required" });
       }
 
       // Validate required fields
@@ -44,8 +52,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Process and watermark IC/Passport image
       const icPassportUrl = await imageProcessor.processAndWatermarkImage(
-        req.file.buffer, 
-        req.file.originalname
+        files.icPassport[0].buffer, 
+        files.icPassport[0].originalname
+      );
+
+      // Process and watermark utility bill image
+      const utilityBillUrl = await imageProcessor.processAndWatermarkImage(
+        files.utilityBill[0].buffer, 
+        files.utilityBill[0].originalname
       );
 
       // Hash the IC/Passport number (password)
@@ -59,6 +73,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         address,
         icPassportNumber,
         icPassportUrl,
+        utilityBillUrl,
+        socialMediaHandle: socialMediaHandle || null,
       });
 
       // Remove sensitive data from response

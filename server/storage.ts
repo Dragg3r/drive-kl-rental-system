@@ -30,9 +30,15 @@ export interface IStorage {
 
 export class DatabaseStorage implements IStorage {
   async createCustomer(insertCustomer: InsertCustomer): Promise<Customer> {
+    const customerData = {
+      ...insertCustomer,
+      utilityBillUrl: insertCustomer.utilityBillUrl || null,
+      socialMediaHandle: insertCustomer.socialMediaHandle || null,
+    };
+    
     const [customer] = await db
       .insert(customers)
-      .values(insertCustomer)
+      .values(customerData)
       .returning();
     return customer;
   }

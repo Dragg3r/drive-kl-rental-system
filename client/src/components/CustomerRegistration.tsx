@@ -17,6 +17,7 @@ const registrationSchema = z.object({
   phone: z.string().min(10, "Please enter a valid phone number"),
   address: z.string().min(10, "Please enter your complete address"),
   icPassportNumber: z.string().min(1, "IC/Passport number is required"),
+  socialMediaHandle: z.string().optional(),
 });
 
 type RegistrationData = z.infer<typeof registrationSchema>;
@@ -27,6 +28,7 @@ interface CustomerRegistrationProps {
 
 export default function CustomerRegistration({ onViewChange }: CustomerRegistrationProps) {
   const [icPassportFile, setIcPassportFile] = useState<File | null>(null);
+  const [utilityBillFile, setUtilityBillFile] = useState<File | null>(null);
   const { toast } = useToast();
 
   const form = useForm<RegistrationData>({
@@ -38,6 +40,7 @@ export default function CustomerRegistration({ onViewChange }: CustomerRegistrat
       phone: "",
       address: "",
       icPassportNumber: "",
+      socialMediaHandle: "",
     },
     mode: "onChange",
   });
@@ -51,8 +54,14 @@ export default function CustomerRegistration({ onViewChange }: CustomerRegistrat
       formData.append('phone', data.phone);
       formData.append('address', data.address);
       formData.append('icPassportNumber', data.icPassportNumber);
+      if (data.socialMediaHandle) {
+        formData.append('socialMediaHandle', data.socialMediaHandle);
+      }
       if (icPassportFile) {
         formData.append('icPassport', icPassportFile);
+      }
+      if (utilityBillFile) {
+        formData.append('utilityBill', utilityBillFile);
       }
 
       const response = await fetch('/api/customers/register', {
@@ -87,11 +96,21 @@ export default function CustomerRegistration({ onViewChange }: CustomerRegistrat
     console.log("Form submitted with data:", data);
     console.log("Form errors:", form.formState.errors);
     console.log("IC/Passport file:", icPassportFile);
+    console.log("Utility bill file:", utilityBillFile);
     
     if (!icPassportFile) {
       toast({
         title: "Missing Required File",
         description: "Please upload your IC/Passport image",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!utilityBillFile) {
+      toast({
+        title: "Missing Required File", 
+        description: "Please upload your utility bill image",
         variant: "destructive",
       });
       return;
@@ -104,6 +123,13 @@ export default function CustomerRegistration({ onViewChange }: CustomerRegistrat
     const file = e.target.files?.[0];
     if (file) {
       setIcPassportFile(file);
+    }
+  };
+
+  const handleUtilityBillChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setUtilityBillFile(file);
     }
   };
 
@@ -216,6 +242,22 @@ export default function CustomerRegistration({ onViewChange }: CustomerRegistrat
 
           <div>
             <Label className="flex items-center text-sm font-semibold text-slate-700 mb-2">
+              <IdCard className="mr-2" size={16} />
+              Instagram Username or Facebook ID (Optional)
+            </Label>
+            <Input
+              {...form.register('socialMediaHandle')}
+              className="input-glass"
+              placeholder="@your_instagram or facebook.com/yourname"
+            />
+            <p className="text-xs text-slate-500 mt-1">This helps us verify your identity</p>
+            {form.formState.errors.socialMediaHandle && (
+              <p className="text-red-500 text-xs mt-1">{form.formState.errors.socialMediaHandle.message}</p>
+            )}
+          </div>
+
+          <div>
+            <Label className="flex items-center text-sm font-semibold text-slate-700 mb-2">
               <Upload className="mr-2" size={16} />
               Upload IC / Passport Front Page
             </Label>
@@ -230,12 +272,37 @@ export default function CustomerRegistration({ onViewChange }: CustomerRegistrat
                 className="hidden"
                 id="ic-upload"
               />
-              <Label htmlFor="ic-upload" className="inline-block bg-primary text-white px-6 py-2 rounded-lg hover:bg-primary/90 cursor-pointer transition-colors">
+              <Label htmlFor="ic-upload" className="inline-block bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 cursor-pointer transition-colors">
                 {icPassportFile ? icPassportFile.name : 'Choose File'}
               </Label>
             </div>
             {!icPassportFile && (
               <p className="text-red-500 text-xs mt-1">IC/Passport image is required</p>
+            )}
+          </div>
+
+          <div>
+            <Label className="flex items-center text-sm font-semibold text-slate-700 mb-2">
+              <Upload className="mr-2" size={16} />
+              Upload Utility Bill (TNB/Water/Internet)
+            </Label>
+            <div className="glass-dark rounded-xl p-6 border-2 border-dashed border-slate-300 text-center">
+              <Upload className="mx-auto text-slate-400 mb-4" size={48} />
+              <p className="text-slate-600 mb-2">Click to upload or drag and drop</p>
+              <p className="text-xs text-slate-500 mb-4">Image will be automatically compressed and watermarked</p>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleUtilityBillChange}
+                className="hidden"
+                id="utility-upload"
+              />
+              <Label htmlFor="utility-upload" className="inline-block bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 cursor-pointer transition-colors">
+                {utilityBillFile ? utilityBillFile.name : 'Choose File'}
+              </Label>
+            </div>
+            {!utilityBillFile && (
+              <p className="text-red-500 text-xs mt-1">Utility bill image is required</p>
             )}
           </div>
 

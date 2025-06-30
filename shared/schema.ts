@@ -11,6 +11,8 @@ export const customers = pgTable("customers", {
   address: text("address").notNull(),
   icPassportNumber: text("ic_passport_number"),
   icPassportUrl: text("ic_passport_url").notNull(),
+  utilityBillUrl: text("utility_bill_url"),
+  socialMediaHandle: text("social_media_handle"), // Instagram username or Facebook ID
   status: text("status").notNull().default("active"), // active, blacklisted
   hasAcceptedTerms: boolean("has_accepted_terms").notNull().default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -51,6 +53,9 @@ export const insertCustomerSchema = createInsertSchema(customers).omit({
   createdAt: true,
   hasAcceptedTerms: true,
   status: true,
+}).partial({
+  utilityBillUrl: true,
+  socialMediaHandle: true,
 });
 
 export const insertRentalSchema = createInsertSchema(rentals).omit({
