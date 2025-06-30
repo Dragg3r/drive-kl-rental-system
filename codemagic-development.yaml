@@ -1,0 +1,70 @@
+workflows:
+  ios-development:
+    name: Drive KL Rental iOS Development Build
+    instance_type: mac_mini_m1
+    max_build_duration: 60
+    environment:
+      vars:
+        BUNDLE_ID: "com.drivekl.rental"
+        XCODE_WORKSPACE: "ios/App/App.xcworkspace"
+        XCODE_SCHEME: "App"
+      node: latest
+      xcode: latest
+      cocoapods: default
+    cache:
+      cache_paths:
+        - $CM_BUILD_DIR/node_modules
+        - ~/.npm
+        - ~/Library/Caches/CocoaPods
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: main
+          include: true
+          source: true
+    scripts:
+      - name: Verify Node.js version
+        script: |
+          echo "Node.js version: $(node --version)"
+          echo "NPM version: $(npm --version)"
+      - name: Install dependencies
+        script: |
+          npm ci
+      - name: Build web application
+        script: |
+          npm run build
+      - name: Verify Capacitor and sync
+        script: |
+          echo "Capacitor version: $(npx cap --version)"
+          npx cap sync ios
+      - name: Install iOS dependencies
+        script: |
+          cd ios/App && pod install
+      - name: Build iOS app (Development - No Signing)
+        script: |
+          cd ios/App
+          xcodebuild \
+            -workspace App.xcworkspace \
+            -scheme App \
+            -configuration Debug \
+            -destination 'generic/platform=iOS' \
+            -archivePath $CM_BUILD_DIR/App.xcarchive \
+            CODE_SIGNING_ALLOWED=NO \
+            archive
+      - name: Create unsigned IPA
+        script: |
+          cd $CM_BUILD_DIR
+          mkdir -p Payload
+          cp -r App.xcarchive/Products/Applications/App.app Payload/
+          zip -r DriveKL-unsigned.ipa Payload/
+    artifacts:
+      - "*.ipa"
+      - "App.xcarchive"
+    publishing:
+      email:
+        recipients:
+          - your.email@example.com
+        notify:
+          success: true
+          failure: true
