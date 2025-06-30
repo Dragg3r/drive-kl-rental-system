@@ -51,9 +51,7 @@ export default function HomePage() {
       <header className="glass fixed top-0 left-0 right-0 z-50 px-4 py-3">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-gradient-to-r from-red-600 to-red-700 rounded-xl flex items-center justify-center">
-              <Car className="text-white" size={20} />
-            </div>
+            <img src={akIconPath} alt="AK13 Logo" className="w-10 h-10 object-contain" />
             <div>
               <h1 className="text-xl font-bold text-slate-800">AK13</h1>
             </div>
@@ -62,7 +60,9 @@ export default function HomePage() {
             <button className="p-2 rounded-lg glass-dark text-slate-700 hover:text-primary transition-colors">
               <Bell size={16} />
             </button>
-            <img src={akIconPath} alt="AK13 Logo" className="w-12 h-12" />
+            <div className="w-10 h-10 bg-gradient-to-r from-red-600 to-red-700 rounded-xl flex items-center justify-center">
+              <Car className="text-white" size={20} />
+            </div>
           </div>
         </div>
       </header>
