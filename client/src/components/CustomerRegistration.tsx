@@ -28,6 +28,13 @@ export default function CustomerRegistration({ onViewChange }: CustomerRegistrat
 
   const form = useForm<RegistrationData>({
     resolver: zodResolver(registrationSchema),
+    defaultValues: {
+      fullName: "",
+      email: "",
+      hashedPassword: "",
+      phone: "",
+      address: "",
+    },
   });
 
   const registerMutation = useMutation({
@@ -86,7 +93,7 @@ export default function CustomerRegistration({ onViewChange }: CustomerRegistrat
     <div className="max-w-2xl mx-auto animate-fade-in">
       <div className="glass rounded-2xl p-8">
         <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl mx-auto mb-4 flex items-center justify-center">
+          <div className="w-16 h-16 bg-gradient-to-r from-red-600 to-red-700 rounded-2xl mx-auto mb-4 flex items-center justify-center">
             <UserPlus className="text-white" size={24} />
           </div>
           <h2 className="text-2xl font-bold text-slate-800">Let's start your Rental Journey</h2>
@@ -195,7 +202,7 @@ export default function CustomerRegistration({ onViewChange }: CustomerRegistrat
               </Label>
             </div>
             {form.formState.errors.icPassport && (
-              <p className="text-red-500 text-xs mt-1">{form.formState.errors.icPassport.message}</p>
+              <p className="text-red-500 text-xs mt-1">IC/Passport image is required</p>
             )}
           </div>
 

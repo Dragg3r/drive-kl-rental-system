@@ -95,7 +95,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ message: "Terms accepted successfully" });
     } catch (error) {
       console.error("Terms acceptance error:", error);
-      res.status(400).json({ message: "Failed to accept terms", error: error.message });
+      res.status(400).json({ message: "Failed to accept terms", error: error instanceof Error ? error.message : "Unknown error" });
     }
   });
 
@@ -229,7 +229,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     } catch (error) {
       console.error("Staff login error:", error);
-      res.status(400).json({ message: "Staff login failed", error: error.message });
+      res.status(400).json({ message: "Staff login failed", error: error instanceof Error ? error.message : "Unknown error" });
     }
   });
 
