@@ -1,5 +1,4 @@
 import { UserCheck, UserPlus, Bus } from "lucide-react";
-import akIconPath from "@assets/AK13-Small_1751303655635.png";
 import dklLogoPath from "@assets/dkl_1751303894484.png";
 
 interface RoleSelectionProps {
@@ -10,8 +9,7 @@ export default function RoleSelection({ onViewChange }: RoleSelectionProps) {
   return (
     <div className="max-w-md mx-auto animate-fade-in">
       <div className="glass rounded-2xl p-8 text-center">
-        <div className="flex items-center justify-center mb-6 space-x-4">
-          <img src={akIconPath} alt="AK Logo" className="w-16 h-16" />
+        <div className="flex items-center justify-center mb-6">
           <img src={dklLogoPath} alt="DKL Logo" className="w-20 h-16" />
         </div>
         <h2 className="text-2xl font-bold text-slate-800 mb-2">Drive KL Rental System</h2>
