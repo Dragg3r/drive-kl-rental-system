@@ -205,13 +205,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Update rental with PDF URL
       await storage.updateRentalPdf(rentalRecord.id, pdfUrl);
 
-      // Send email with PDF attachment
-      await emailService.sendRentalAgreement(customer, pdfUrl, rentalRecord);
+      // Try to send email with PDF attachment (optional)
+      let emailSent = false;
+      try {
+        await emailService.sendRentalAgreement(customer, pdfUrl, rentalRecord);
+        emailSent = true;
+        console.log("Email sent successfully to:", customer.email);
+      } catch (emailError) {
+        console.error("Error sending email:", emailError);
+        // Continue without email - PDF generation was successful
+      }
 
       res.json({ 
-        message: "Agreement generated and emailed successfully",
+        message: emailSent ? "Agreement generated and emailed successfully" : "Agreement generated successfully (email delivery unavailable)",
         pdfUrl,
-        downloadUrl: `/api/rentals/${rentalRecord.id}/download-agreement`
+        downloadUrl: `/api/rentals/${rentalRecord.id}/download-agreement`,
+        emailSent
       });
     } catch (error) {
       console.error("Agreement generation error:", error);
