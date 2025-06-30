@@ -24,14 +24,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Customer Registration
   app.post("/api/customers/register", upload.single('icPassport'), async (req, res) => {
     try {
-      const customerData = insertCustomerSchema.parse(req.body);
+      // Validate only the required fields from the request body
+      const { fullName, email, hashedPassword, phone, address } = req.body;
       
       if (!req.file) {
         return res.status(400).json({ message: "IC/Passport image is required" });
       }
 
+      // Validate required fields
+      if (!fullName || !email || !hashedPassword || !phone || !address) {
+        return res.status(400).json({ message: "All fields are required" });
+      }
+
       // Check if customer already exists
-      const existingCustomer = await storage.getCustomerByEmail(customerData.email);
+      const existingCustomer = await storage.getCustomerByEmail(email);
       if (existingCustomer) {
         return res.status(400).json({ message: "Customer with this email already exists" });
       }
@@ -43,16 +49,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
 
       // Hash the IC/Passport number (password)
-      const hashedPassword = await storage.hashPassword(customerData.hashedPassword);
+      const hashedPasswordValue = await storage.hashPassword(hashedPassword);
 
       const newCustomer = await storage.createCustomer({
-        ...customerData,
-        hashedPassword,
+        fullName,
+        email,
+        hashedPassword: hashedPasswordValue,
+        phone,
+        address,
         icPassportUrl,
       });
 
       // Remove sensitive data from response
-      const { hashedPassword: _, ...safeCustomer } = newCustomer;
+      const { hashedPassword: _password, ...safeCustomer } = newCustomer;
       res.json(safeCustomer);
     } catch (error) {
       console.error("Registration error:", error);
