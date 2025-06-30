@@ -10,7 +10,7 @@ workflows:
         BUNDLE_ID: "com.drivekl.rental"
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
-      node: 20.18.0
+      node: latest  # Uses latest LTS Node.js (20+)
       xcode: latest
       cocoapods: default
     cache:
@@ -22,24 +22,31 @@ workflows:
       events:
         - push
         - tag
-        - pull_request
       branch_patterns:
         - pattern: main
           include: true
           source: true
     scripts:
+      - name: Verify Node.js version
+        script: |
+          echo "Node.js version:"
+          node --version
+          echo "NPM version:"
+          npm --version
       - name: Install dependencies
         script: |
           npm ci
       - name: Build web app
         script: |
           npm run build
+      - name: Verify Capacitor CLI
+        script: |
+          npx cap --version
       - name: Sync Capacitor
         script: |
           npx cap sync ios
       - name: Setup iOS dependencies
         script: |
-          # Install CocoaPods dependencies
           cd ios/App && pod install
       - name: Set up keychain
         script: |

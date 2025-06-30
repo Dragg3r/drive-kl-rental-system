@@ -8,7 +8,7 @@ workflows:
         BUNDLE_ID: "com.drivekl.rental"
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
-      node: 18.17.0
+      node: 20.18.0
       xcode: latest
       cocoapods: default
     cache:
