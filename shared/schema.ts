@@ -9,6 +9,7 @@ export const customers = pgTable("customers", {
   hashedPassword: text("hashed_password").notNull(), // IC/Passport hashed
   phone: text("phone").notNull(),
   address: text("address").notNull(),
+  icPassportNumber: text("ic_passport_number"),
   icPassportUrl: text("ic_passport_url").notNull(),
   status: text("status").notNull().default("active"), // active, blacklisted
   hasAcceptedTerms: boolean("has_accepted_terms").notNull().default(false),

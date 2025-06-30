@@ -34,6 +34,7 @@ export class PDFGenerator {
     doc.fontSize(14).font('Helvetica-Bold').text('CUSTOMER INFORMATION');
     doc.fontSize(12).font('Helvetica');
     doc.text(`Full Name: ${customer.fullName}`);
+    doc.text(`IC/Passport Number: ${customer.icPassportNumber || 'N/A'}`);
     doc.text(`Email: ${customer.email}`);
     doc.text(`Phone: ${customer.phone}`);
     doc.text(`Address: ${customer.address}`);

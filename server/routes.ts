@@ -25,14 +25,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/customers/register", upload.single('icPassport'), async (req, res) => {
     try {
       // Validate only the required fields from the request body
-      const { fullName, email, hashedPassword, phone, address } = req.body;
+      const { fullName, email, hashedPassword, phone, address, icPassportNumber } = req.body;
       
       if (!req.file) {
         return res.status(400).json({ message: "IC/Passport image is required" });
       }
 
       // Validate required fields
-      if (!fullName || !email || !hashedPassword || !phone || !address) {
+      if (!fullName || !email || !hashedPassword || !phone || !address || !icPassportNumber) {
         return res.status(400).json({ message: "All fields are required" });
       }
 
@@ -57,6 +57,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         hashedPassword: hashedPasswordValue,
         phone,
         address,
+        icPassportNumber,
         icPassportUrl,
       });
 

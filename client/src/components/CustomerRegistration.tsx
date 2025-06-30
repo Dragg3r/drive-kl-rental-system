@@ -16,6 +16,7 @@ const registrationSchema = z.object({
   hashedPassword: z.string().min(6, "Password must be at least 6 characters"),
   phone: z.string().min(10, "Please enter a valid phone number"),
   address: z.string().min(10, "Please enter your complete address"),
+  icPassportNumber: z.string().min(1, "IC/Passport number is required"),
 });
 
 type RegistrationData = z.infer<typeof registrationSchema>;
@@ -36,6 +37,7 @@ export default function CustomerRegistration({ onViewChange }: CustomerRegistrat
       hashedPassword: "",
       phone: "",
       address: "",
+      icPassportNumber: "",
     },
     mode: "onChange",
   });
@@ -48,6 +50,7 @@ export default function CustomerRegistration({ onViewChange }: CustomerRegistrat
       formData.append('hashedPassword', data.hashedPassword);
       formData.append('phone', data.phone);
       formData.append('address', data.address);
+      formData.append('icPassportNumber', data.icPassportNumber);
       if (icPassportFile) {
         formData.append('icPassport', icPassportFile);
       }
@@ -135,6 +138,21 @@ export default function CustomerRegistration({ onViewChange }: CustomerRegistrat
             <Label className="flex items-center text-sm font-semibold text-slate-700 mb-2">
               <IdCard className="mr-2" size={16} />
               IC / Passport Number
+            </Label>
+            <Input
+              {...form.register('icPassportNumber')}
+              className="input-glass"
+              placeholder="Enter your IC or Passport number"
+            />
+            {form.formState.errors.icPassportNumber && (
+              <p className="text-red-500 text-xs mt-1">{form.formState.errors.icPassportNumber.message}</p>
+            )}
+          </div>
+
+          <div>
+            <Label className="flex items-center text-sm font-semibold text-slate-700 mb-2">
+              <IdCard className="mr-2" size={16} />
+              Password (IC/Passport Number)
             </Label>
             <Input
               {...form.register('hashedPassword')}

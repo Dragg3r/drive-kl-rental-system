@@ -110,6 +110,11 @@ This is a comprehensive car rental management system for Drive KL Executive Sdn 
   - Made pricing fields number-only inputs
   - Fixed signature pad scrolling issues by preventing touch event propagation
   - Implemented proper form validation with detailed error logging
+- June 30, 2025. Added IC/Passport number display in rental agreements:
+  - Added icPassportNumber field to customer database schema
+  - Updated customer registration form to include IC/Passport number input
+  - Modified PDF generator to display IC/Passport number in customer information section
+  - Applied database schema changes with migration handling for existing data
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
