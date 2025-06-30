@@ -115,6 +115,15 @@ This is a comprehensive car rental management system for Drive KL Executive Sdn 
   - Updated customer registration form to include IC/Passport number input
   - Modified PDF generator to display IC/Passport number in customer information section
   - Applied database schema changes with migration handling for existing data
+- June 30, 2025. Enhanced customer verification and mobile app conversion:
+  - Added utility bill upload requirement for enhanced customer verification
+  - Added social media handle field (Instagram username or Facebook ID)
+  - Converted branding from "Drive KL Executive" to "Drive KL Rental System by Akib"
+  - Updated header with AK13 logo positioning and red color scheme
+  - Created mobile iOS app structure using Expo React Native
+  - Developed mobile screens: home, registration, login, rental booking, staff dashboard
+  - Integrated mobile image picker for document uploads
+  - Added comprehensive mobile setup instructions for iOS deployment
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
