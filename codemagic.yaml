@@ -120,10 +120,3 @@ workflows:
         notify:
           success: true
           failure: true
-        content: |
-          Drive KL Rental iOS app is ready for sideloading!
-          
-          Download the IPA file from the build artifacts.
-          Use AltStore, Sideloadly, or 3uTools to install on your iPhone.
-          
-          Your Apple ID for sideloading: m.aqibnadeem@live.com
