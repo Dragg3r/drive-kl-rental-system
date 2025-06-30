@@ -1,9 +1,7 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { insertCustomerSchema } from "@shared/schema";
 import { useMutation } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -12,8 +10,12 @@ import { useToast } from "@/hooks/use-toast";
 import { UserPlus, ArrowLeft, Upload, User, IdCard, Mail, Phone, MapPin } from "lucide-react";
 import { z } from "zod";
 
-const registrationSchema = insertCustomerSchema.extend({
-  icPassport: z.any().refine((files) => files?.length > 0, "IC/Passport image is required"),
+const registrationSchema = z.object({
+  fullName: z.string().min(1, "Full name is required"),
+  email: z.string().email("Please enter a valid email"),
+  hashedPassword: z.string().min(6, "Password must be at least 6 characters"),
+  phone: z.string().min(10, "Please enter a valid phone number"),
+  address: z.string().min(10, "Please enter your complete address"),
 });
 
 type RegistrationData = z.infer<typeof registrationSchema>;
@@ -35,6 +37,7 @@ export default function CustomerRegistration({ onViewChange }: CustomerRegistrat
       phone: "",
       address: "",
     },
+    mode: "onChange",
   });
 
   const registerMutation = useMutation({
@@ -78,6 +81,19 @@ export default function CustomerRegistration({ onViewChange }: CustomerRegistrat
   });
 
   const onSubmit = (data: RegistrationData) => {
+    console.log("Form submitted with data:", data);
+    console.log("Form errors:", form.formState.errors);
+    console.log("IC/Passport file:", icPassportFile);
+    
+    if (!icPassportFile) {
+      toast({
+        title: "Missing Required File",
+        description: "Please upload your IC/Passport image",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     registerMutation.mutate(data);
   };
 
@@ -85,7 +101,6 @@ export default function CustomerRegistration({ onViewChange }: CustomerRegistrat
     const file = e.target.files?.[0];
     if (file) {
       setIcPassportFile(file);
-      form.setValue('icPassport', e.target.files);
     }
   };
 
@@ -201,7 +216,7 @@ export default function CustomerRegistration({ onViewChange }: CustomerRegistrat
                 {icPassportFile ? icPassportFile.name : 'Choose File'}
               </Label>
             </div>
-            {form.formState.errors.icPassport && (
+            {!icPassportFile && (
               <p className="text-red-500 text-xs mt-1">IC/Passport image is required</p>
             )}
           </div>
