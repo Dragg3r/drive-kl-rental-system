@@ -32,6 +32,7 @@ export default function SignaturePad({ onSignatureChange, className }: Signature
   }, []);
 
   const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -48,6 +49,7 @@ export default function SignaturePad({ onSignatureChange, className }: Signature
   };
 
   const draw = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
     if (!isDrawing) return;
 
     const canvas = canvasRef.current;

@@ -102,6 +102,14 @@ This is a comprehensive car rental management system for Drive KL Executive Sdn 
 
 ## Changelog
 - June 30, 2025. Initial setup
+- June 30, 2025. Fixed rental form validation and generate agreement functionality:
+  - Updated form schema to match expected data types
+  - Added automatic date calculation for total rental days
+  - Fixed server-side rental retrieval for PDF generation
+  - Added progress indicators for file uploads and PDF generation
+  - Made pricing fields number-only inputs
+  - Fixed signature pad scrolling issues by preventing touch event propagation
+  - Implemented proper form validation with detailed error logging
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.

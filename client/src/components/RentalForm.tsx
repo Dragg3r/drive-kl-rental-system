@@ -21,7 +21,20 @@ import {
 } from "lucide-react";
 import { z } from "zod";
 
-const rentalFormSchema = insertRentalSchema.extend({
+const rentalFormSchema = z.object({
+  customerId: z.number(),
+  vehicle: z.string().min(1, "Vehicle selection is required"),
+  color: z.string().min(1, "Color selection is required"),
+  mileageLimit: z.string().min(1, "Mileage limit is required"),
+  extraMileageCharge: z.string().min(1, "Extra mileage charge is required"),
+  fuelLevel: z.number().min(0).max(8),
+  startDate: z.string().min(1, "Start date is required"),
+  endDate: z.string().min(1, "End date is required"),
+  totalDays: z.number().min(1, "Total days must be at least 1"),
+  rentalPerDay: z.string().min(1, "Rental per day is required"),
+  deposit: z.string().min(1, "Deposit is required"),
+  discount: z.string().default("0"),
+  grandTotal: z.string().min(1, "Grand total is required"),
   signatureData: z.string().optional(),
   vehiclePhotos: z.array(z.any()).optional(),
   paymentProof: z.any().optional(),
@@ -47,6 +60,17 @@ export default function RentalForm({ onViewChange, onComplete }: RentalFormProps
     defaultValues: {
       customerId: customer?.id,
       fuelLevel: 4,
+      mileageLimit: "",
+      extraMileageCharge: "",
+      vehicle: "",
+      color: "",
+      startDate: "",
+      endDate: "",
+      totalDays: 1,
+      rentalPerDay: "",
+      deposit: "",
+      discount: "0",
+      grandTotal: "",
     },
   });
 
@@ -168,18 +192,14 @@ export default function RentalForm({ onViewChange, onComplete }: RentalFormProps
     const endDate = watchedValues.endDate;
     
     if (startDate && endDate) {
-      // Convert to string format for calculation
-      const startStr = typeof startDate === 'string' ? startDate : startDate.toString();
-      const endStr = typeof endDate === 'string' ? endDate : endDate.toString();
-      
-      const totalDays = calculateTotalDays(startStr, endStr);
+      const totalDays = calculateTotalDays(startDate, endDate);
       if (totalDays > 0) {
         form.setValue('totalDays', totalDays);
       }
     }
   }, [watchedValues.startDate, watchedValues.endDate, form]);
   
-  // Auto-calculate costs
+  // Auto-calculate costs and update grandTotal
   const costs = calculateRentalCosts({
     rentalPerDay: Number(watchedValues.rentalPerDay) || 0,
     deposit: Number(watchedValues.deposit) || 0,
@@ -187,9 +207,22 @@ export default function RentalForm({ onViewChange, onComplete }: RentalFormProps
     totalDays: watchedValues.totalDays || 1,
   });
 
+  // Auto-update grand total when costs change
+  useEffect(() => {
+    form.setValue('grandTotal', costs.grandTotal.toString());
+  }, [costs.grandTotal, form]);
+
   // Auto-update mileage info when vehicle changes
   const selectedVehicle = watchedValues.vehicle;
   const mileageInfo = selectedVehicle ? getVehicleMileageInfo(selectedVehicle) : null;
+  
+  // Auto-populate mileage fields when vehicle changes
+  useEffect(() => {
+    if (mileageInfo) {
+      form.setValue('mileageLimit', mileageInfo.limit);
+      form.setValue('extraMileageCharge', mileageInfo.charge);
+    }
+  }, [mileageInfo, form]);
 
   const photoTypes = ['Front With Customer', 'Front', 'Back', 'Left', 'Right', 'Interior/Mileage', 'Known Damage'];
 
@@ -477,9 +510,11 @@ export default function RentalForm({ onViewChange, onComplete }: RentalFormProps
               <div>
                 <Label>Rental Per Day (RM)</Label>
                 <Input
-                  {...form.register('rentalPerDay', { valueAsNumber: true })}
+                  {...form.register('rentalPerDay')}
                   type="number"
                   step="0.01"
+                  min="0"
+                  inputMode="decimal"
                   className="input-glass"
                   placeholder="0.00"
                 />
@@ -487,9 +522,11 @@ export default function RentalForm({ onViewChange, onComplete }: RentalFormProps
               <div>
                 <Label>Deposit (RM)</Label>
                 <Input
-                  {...form.register('deposit', { valueAsNumber: true })}
+                  {...form.register('deposit')}
                   type="number"
                   step="0.01"
+                  min="0"
+                  inputMode="decimal"
                   className="input-glass"
                   placeholder="0.00"
                 />
@@ -513,9 +550,11 @@ export default function RentalForm({ onViewChange, onComplete }: RentalFormProps
               <div>
                 <Label>Discount (RM)</Label>
                 <Input
-                  {...form.register('discount', { valueAsNumber: true })}
+                  {...form.register('discount')}
                   type="number"
                   step="0.01"
+                  min="0"
+                  inputMode="decimal"
                   className="input-glass"
                   placeholder="0.00"
                 />
@@ -600,13 +639,24 @@ export default function RentalForm({ onViewChange, onComplete }: RentalFormProps
                   form.handleSubmit(onSubmit)();
                 }}
                 disabled={!signatureData || createRentalMutation.isPending || generateAgreementMutation.isPending}
-                className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white"
+                className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white min-w-[200px]"
               >
-                <Signature className="mr-2" size={16} />
-                {createRentalMutation.isPending || generateAgreementMutation.isPending 
-                  ? 'Generating Agreement...' 
-                  : 'Generate Agreement'
-                }
+                {createRentalMutation.isPending ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Uploading Files...
+                  </>
+                ) : generateAgreementMutation.isPending ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Generating PDF...
+                  </>
+                ) : (
+                  <>
+                    <Signature className="mr-2" size={16} />
+                    Generate Agreement
+                  </>
+                )}
               </Button>
             </div>
           </div>
