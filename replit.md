@@ -115,14 +115,6 @@ This is a comprehensive car rental management system for Drive KL Executive Sdn 
   - Updated customer registration form to include IC/Passport number input
   - Modified PDF generator to display IC/Passport number in customer information section
   - Applied database schema changes with migration handling for existing data
-- June 30, 2025. Created complete WordPress plugin conversion:
-  - Built full-featured WordPress plugin maintaining all original functionality
-  - Implemented WordPress admin integration with custom dashboard
-  - Added shortcode system for easy page integration [dkl_rental_system]
-  - Created secure AJAX handling with WordPress nonces
-  - Developed responsive design with AK13/DKL branding
-  - Packaged as installable .zip file (drive-kl-rental-plugin.zip)
-  - Original web application remains fully functional and untouched
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
