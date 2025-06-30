@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertRentalSchema } from "@shared/schema";
@@ -13,7 +13,7 @@ import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { vehicles, getVehicleMileageInfo } from "@/lib/vehicles";
-import { calculateRentalCosts } from "@/lib/calculations";
+import { calculateRentalCosts, calculateTotalDays } from "@/lib/calculations";
 import SignaturePad from "@/components/ui/signature-pad";
 import { 
   UserCheck, Car, Camera, Calendar, CreditCard, Signature, 
@@ -137,6 +137,23 @@ export default function RentalForm({ onViewChange, onComplete }: RentalFormProps
   };
 
   const watchedValues = form.watch();
+  
+  // Auto-calculate total days when dates change
+  useEffect(() => {
+    const startDate = watchedValues.startDate;
+    const endDate = watchedValues.endDate;
+    
+    if (startDate && endDate) {
+      // Convert to string format for calculation
+      const startStr = typeof startDate === 'string' ? startDate : startDate.toString();
+      const endStr = typeof endDate === 'string' ? endDate : endDate.toString();
+      
+      const totalDays = calculateTotalDays(startStr, endStr);
+      if (totalDays > 0) {
+        form.setValue('totalDays', totalDays);
+      }
+    }
+  }, [watchedValues.startDate, watchedValues.endDate, form]);
   
   // Auto-calculate costs
   const costs = calculateRentalCosts({

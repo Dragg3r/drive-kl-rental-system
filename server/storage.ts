@@ -15,6 +15,7 @@ export interface IStorage {
 
   // Rental methods
   createRental(rental: InsertRental): Promise<Rental>;
+  getRentalById(id: number): Promise<Rental | undefined>;
   updateRentalPdf(id: number, pdfUrl: string): Promise<void>;
   getRentalsByCustomer(customerId: number): Promise<Rental[]>;
   getAllRentals(): Promise<Rental[]>;
@@ -77,6 +78,11 @@ export class DatabaseStorage implements IStorage {
       .values(insertRental)
       .returning();
     return rental;
+  }
+
+  async getRentalById(id: number): Promise<Rental | undefined> {
+    const [rental] = await db.select().from(rentals).where(eq(rentals.id, id));
+    return rental || undefined;
   }
 
   async updateRentalPdf(id: number, pdfUrl: string): Promise<void> {

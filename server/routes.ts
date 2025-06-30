@@ -170,13 +170,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/rentals/:id/generate-agreement", async (req, res) => {
     try {
       const rentalId = parseInt(req.params.id);
-      const rental = await storage.getRentalsByCustomer(rentalId);
+      const rentalRecord = await storage.getRentalById(rentalId);
       
-      if (!rental.length) {
+      if (!rentalRecord) {
         return res.status(404).json({ message: "Rental not found" });
       }
-
-      const rentalRecord = rental[0];
       const customer = await storage.getCustomerById(rentalRecord.customerId);
       
       if (!customer) {
