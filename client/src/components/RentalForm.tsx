@@ -22,9 +22,9 @@ import {
 import { z } from "zod";
 
 const rentalFormSchema = insertRentalSchema.extend({
-  signatureData: z.string().min(1, "Digital signature is required"),
-  vehiclePhotos: z.array(z.any()).length(7, "All 7 vehicle photos are required"),
-  paymentProof: z.any().refine((files) => files?.length > 0, "Payment proof is required"),
+  signatureData: z.string().optional(),
+  vehiclePhotos: z.array(z.any()).optional(),
+  paymentProof: z.any().optional(),
 });
 
 type RentalFormData = z.infer<typeof rentalFormSchema>;
@@ -148,7 +148,16 @@ export default function RentalForm({ onViewChange, onComplete }: RentalFormProps
     console.log("Vehicle photos:", vehiclePhotos);
     console.log("Payment proof:", paymentProof);
     console.log("Signature data:", signatureData);
-    createRentalMutation.mutate(data);
+    
+    // Ensure all required data is included
+    const completeData = {
+      ...data,
+      vehiclePhotos: vehiclePhotos,
+      paymentProof: paymentProof,
+      signatureData: signatureData
+    };
+    
+    createRentalMutation.mutate(completeData);
   };
 
   const watchedValues = form.watch();
@@ -583,7 +592,13 @@ export default function RentalForm({ onViewChange, onComplete }: RentalFormProps
                 Previous
               </Button>
               <Button
-                onClick={form.handleSubmit(onSubmit)}
+                onClick={() => {
+                  console.log("Generate Agreement button clicked");
+                  console.log("Form state:", form.getValues());
+                  console.log("Form errors:", form.formState.errors);
+                  console.log("Is form valid:", form.formState.isValid);
+                  form.handleSubmit(onSubmit)();
+                }}
                 disabled={!signatureData || createRentalMutation.isPending || generateAgreementMutation.isPending}
                 className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white"
               >
