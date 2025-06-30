@@ -1,16 +1,15 @@
 workflows:
-  ios-build:
-    name: Drive KL Rental iOS Build
+  ios-sideload:
+    name: Drive KL Rental iOS - Sideload Build
     instance_type: mac_mini_m1
     max_build_duration: 60
     environment:
-      groups:
-        - ios_credentials
       vars:
         BUNDLE_ID: "com.drivekl.rental"
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
-      node: 20.18.0
+        APP_NAME: "DriveKL-Rental"
+      node: latest
       xcode: latest
       cocoapods: default
     cache:
@@ -21,51 +20,110 @@ workflows:
     triggering:
       events:
         - push
-        - tag
-        - pull_request
       branch_patterns:
         - pattern: main
           include: true
           source: true
     scripts:
-      - name: Install dependencies
+      - name: Environment Check
+        script: |
+          echo "=== Build Environment ==="
+          echo "Node.js: $(node --version)"
+          echo "Xcode: $(xcodebuild -version | head -1)"
+          echo "Bundle ID: $BUNDLE_ID"
+          echo "App Name: $APP_NAME"
+          echo "========================"
+      - name: Install Dependencies
         script: |
           npm ci
-      - name: Build web app
+      - name: Build Web Application
         script: |
           npm run build
+          echo "Web build completed successfully"
       - name: Sync Capacitor
         script: |
           npx cap sync ios
-      - name: Setup iOS dependencies
+          echo "Capacitor sync completed"
+      - name: Install iOS Dependencies
         script: |
-          # Install CocoaPods dependencies
           cd ios/App && pod install
-      - name: Set up keychain
+          echo "CocoaPods installation completed"
+      - name: Prepare Unsigned Build
         script: |
-          keychain initialize
-      - name: Set up provisioning profiles (Development)
+          cd ios/App
+          # Remove code signing requirements
+          sed -i '' 's/CODE_SIGNING_REQUIRED = YES/CODE_SIGNING_REQUIRED = NO/g' App.xcodeproj/project.pbxproj
+          sed -i '' 's/CODE_SIGNING_ALLOWED = YES/CODE_SIGNING_ALLOWED = NO/g' App.xcodeproj/project.pbxproj
+          echo "Prepared for unsigned build"
+      - name: Build Unsigned iOS App
         script: |
-          app-store-connect fetch-signing-files $BUNDLE_ID \
-            --type IOS_APP_DEVELOPMENT \
-            --create
-      - name: Set up signing certificate
+          cd ios/App
+          xcodebuild \
+            -workspace App.xcworkspace \
+            -scheme App \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath $CM_BUILD_DIR/App.xcarchive \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            PROVISIONING_PROFILE="" \
+            archive
+          echo "iOS archive created successfully"
+      - name: Create Sideloadable IPA
         script: |
-          keychain add-certificates
-      - name: Build iOS app
+          cd $CM_BUILD_DIR
+          echo "Creating IPA for sideloading..."
+          
+          # Create Payload directory
+          mkdir -p Payload
+          
+          # Copy app bundle
+          cp -r App.xcarchive/Products/Applications/App.app Payload/
+          
+          # Create IPA
+          zip -r "${APP_NAME}-Sideload-$(date +%Y%m%d-%H%M).ipa" Payload/
+          
+          # Create info file
+          echo "=== Drive KL Rental System - Sideload Build ===" > build-info.txt
+          echo "Build Date: $(date)" >> build-info.txt
+          echo "Bundle ID: $BUNDLE_ID" >> build-info.txt
+          echo "App Name: $APP_NAME" >> build-info.txt
+          echo "Build Type: Unsigned (for sideloading)" >> build-info.txt
+          echo "" >> build-info.txt
+          echo "Installation Methods:" >> build-info.txt
+          echo "1. AltStore - Import IPA and install" >> build-info.txt
+          echo "2. Sideloadly - Use with any Apple ID" >> build-info.txt
+          echo "3. 3uTools - Direct installation" >> build-info.txt
+          echo "4. Xcode - Open project and run" >> build-info.txt
+          echo "" >> build-info.txt
+          echo "Apple ID for sideloading: m.aqibnadeem@live.com" >> build-info.txt
+          
+          echo "IPA created successfully: ${APP_NAME}-Sideload-$(date +%Y%m%d-%H%M).ipa"
+      - name: Verify Build
         script: |
-          xcode-project build-ipa \
-            --workspace "$XCODE_WORKSPACE" \
-            --scheme "$XCODE_SCHEME" \
-            --archive-flags="-destination 'generic/platform=iOS'"
+          cd $CM_BUILD_DIR
+          echo "=== Build Verification ==="
+          ls -la *.ipa
+          ls -la *.txt
+          echo "Archive structure:"
+          ls -la App.xcarchive/Products/Applications/
+          echo "========================="
     artifacts:
-      - build/ios/ipa/*.ipa
-      - /tmp/xcodebuild_logs/*.log
-      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
+      - "*.ipa"
+      - "*.txt"
+      - "App.xcarchive"
     publishing:
       email:
         recipients:
-          - your.email@example.com
+          - m.aqibnadeem@live.com
         notify:
           success: true
           failure: true
+        content: |
+          Drive KL Rental iOS app is ready for sideloading!
+          
+          Download the IPA file from the build artifacts.
+          Use AltStore, Sideloadly, or 3uTools to install on your iPhone.
+          
+          Your Apple ID for sideloading: m.aqibnadeem@live.com
