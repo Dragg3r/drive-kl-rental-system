@@ -220,7 +220,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: emailSent ? "Agreement generated and emailed successfully" : "Agreement generated successfully (email delivery unavailable)",
         pdfUrl,
         downloadUrl: `/api/rentals/${rentalRecord.id}/download-agreement`,
-        emailSent
+        emailSent,
+        // Include rental data for display
+        customerName: customer.fullName,
+        vehicle: rentalRecord.vehicle,
+        period: `${new Date(rentalRecord.startDate).toLocaleDateString()} - ${new Date(rentalRecord.endDate).toLocaleDateString()}`,
+        total: parseFloat(rentalRecord.grandTotal).toFixed(2),
+        rental: rentalRecord
       });
     } catch (error) {
       console.error("Agreement generation error:", error);
@@ -232,13 +238,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/rentals/:id/download-agreement", async (req, res) => {
     try {
       const rentalId = parseInt(req.params.id);
-      const rental = await storage.getRentalsByCustomer(rentalId);
+      const rental = await storage.getRentalById(rentalId);
       
-      if (!rental.length || !rental[0].agreementPdfUrl) {
+      if (!rental || !rental.agreementPdfUrl) {
         return res.status(404).json({ message: "Agreement not found" });
       }
 
-      const pdfPath = path.join(process.cwd(), rental[0].agreementPdfUrl.replace('/', ''));
+      const pdfPath = path.join(process.cwd(), rental.agreementPdfUrl.replace('/', ''));
       res.download(pdfPath);
     } catch (error) {
       console.error("Download error:", error);
