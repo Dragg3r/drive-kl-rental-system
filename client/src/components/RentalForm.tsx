@@ -52,6 +52,7 @@ export default function RentalForm({ onViewChange, onComplete }: RentalFormProps
 
   const createRentalMutation = useMutation({
     mutationFn: async (data: RentalFormData) => {
+      console.log("Creating rental with mutation...");
       const formData = new FormData();
       
       // Add form fields
@@ -74,6 +75,7 @@ export default function RentalForm({ onViewChange, onComplete }: RentalFormProps
         formData.append('signatureData', signatureData);
       }
 
+      console.log("Sending rental request to server...");
       const response = await fetch('/api/rentals', {
         method: 'POST',
         body: formData,
@@ -81,15 +83,20 @@ export default function RentalForm({ onViewChange, onComplete }: RentalFormProps
 
       if (!response.ok) {
         const error = await response.json();
+        console.error("Rental creation error:", error);
         throw new Error(error.message);
       }
 
-      return response.json();
+      const result = await response.json();
+      console.log("Rental created successfully:", result);
+      return result;
     },
     onSuccess: (rental) => {
+      console.log("Rental creation success, generating agreement for rental ID:", rental.id);
       generateAgreementMutation.mutate(rental.id);
     },
     onError: (error: Error) => {
+      console.error("Rental creation failed:", error);
       toast({
         title: "Rental Creation Failed",
         description: error.message,
@@ -100,10 +107,13 @@ export default function RentalForm({ onViewChange, onComplete }: RentalFormProps
 
   const generateAgreementMutation = useMutation({
     mutationFn: async (rentalId: number) => {
+      console.log("Generating agreement for rental ID:", rentalId);
       const response = await apiRequest('POST', `/api/rentals/${rentalId}/generate-agreement`);
+      console.log("Agreement generation response:", response);
       return response.json();
     },
     onSuccess: (data) => {
+      console.log("Agreement generated successfully:", data);
       toast({
         title: "Agreement Generated!",
         description: "Your rental agreement has been created and emailed to you.",
@@ -112,6 +122,7 @@ export default function RentalForm({ onViewChange, onComplete }: RentalFormProps
       onViewChange('final-confirmation');
     },
     onError: (error: Error) => {
+      console.error("Agreement generation failed:", error);
       toast({
         title: "Agreement Generation Failed",
         description: error.message,
@@ -133,6 +144,10 @@ export default function RentalForm({ onViewChange, onComplete }: RentalFormProps
   };
 
   const onSubmit = (data: RentalFormData) => {
+    console.log("Form submission started with data:", data);
+    console.log("Vehicle photos:", vehiclePhotos);
+    console.log("Payment proof:", paymentProof);
+    console.log("Signature data:", signatureData);
     createRentalMutation.mutate(data);
   };
 
