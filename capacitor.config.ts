@@ -3,7 +3,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 const config: CapacitorConfig = {
   appId: 'com.drivekl.rental',
   appName: 'Drive KL Rental System by Akib',
-  webDir: 'client/dist',
+  webDir: 'dist/public',
   server: {
     androidScheme: 'https'
   },
