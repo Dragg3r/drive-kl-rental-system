@@ -1,0 +1,160 @@
+<?php
+/**
+ * Plugin Name: Drive KL Rental System
+ * Plugin URI: https://drivekl.com
+ * Description: Complete car rental management system with customer registration, document uploads, PDF agreement generation, and staff dashboard.
+ * Version: 1.0.0
+ * Author: Akib
+ * Author URI: https://ak13.com
+ * License: GPL v2 or later
+ * Text Domain: drive-kl-rental
+ * Domain Path: /languages
+ */
+
+// Prevent direct access
+if (!defined('ABSPATH')) {
+    exit;
+}
+
+// Define plugin constants
+define('DKL_RENTAL_VERSION', '1.0.0');
+define('DKL_RENTAL_PLUGIN_URL', plugin_dir_url(__FILE__));
+define('DKL_RENTAL_PLUGIN_PATH', plugin_dir_path(__FILE__));
+define('DKL_RENTAL_PLUGIN_BASENAME', plugin_basename(__FILE__));
+
+// Main plugin class
+class DriveKLRental {
+    
+    private static $instance = null;
+    
+    public static function getInstance() {
+        if (self::$instance == null) {
+            self::$instance = new DriveKLRental();
+        }
+        return self::$instance;
+    }
+    
+    private function __construct() {
+        add_action('init', array($this, 'init'));
+        register_activation_hook(__FILE__, array($this, 'activate'));
+        register_deactivation_hook(__FILE__, array($this, 'deactivate'));
+    }
+    
+    public function init() {
+        // Load dependencies
+        $this->loadDependencies();
+        
+        // Initialize components
+        $this->initializeComponents();
+        
+        // Add hooks
+        $this->addHooks();
+    }
+    
+    private function loadDependencies() {
+        require_once DKL_RENTAL_PLUGIN_PATH . 'includes/class-database.php';
+        require_once DKL_RENTAL_PLUGIN_PATH . 'includes/class-customer.php';
+        require_once DKL_RENTAL_PLUGIN_PATH . 'includes/class-rental.php';
+        require_once DKL_RENTAL_PLUGIN_PATH . 'includes/class-pdf-generator.php';
+        require_once DKL_RENTAL_PLUGIN_PATH . 'includes/class-image-processor.php';
+        require_once DKL_RENTAL_PLUGIN_PATH . 'includes/class-email-service.php';
+        require_once DKL_RENTAL_PLUGIN_PATH . 'admin/class-admin.php';
+        require_once DKL_RENTAL_PLUGIN_PATH . 'public/class-public.php';
+        require_once DKL_RENTAL_PLUGIN_PATH . 'includes/class-ajax-handler.php';
+        require_once DKL_RENTAL_PLUGIN_PATH . 'includes/class-shortcodes.php';
+    }
+    
+    private function initializeComponents() {
+        new DKL_Rental_Database();
+        new DKL_Rental_Admin();
+        new DKL_Rental_Public();
+        new DKL_Rental_Ajax_Handler();
+        new DKL_Rental_Shortcodes();
+    }
+    
+    private function addHooks() {
+        add_action('wp_enqueue_scripts', array($this, 'enqueuePublicScripts'));
+        add_action('admin_enqueue_scripts', array($this, 'enqueueAdminScripts'));
+        add_action('wp_ajax_dkl_rental_action', array('DKL_Rental_Ajax_Handler', 'handleAjax'));
+        add_action('wp_ajax_nopriv_dkl_rental_action', array('DKL_Rental_Ajax_Handler', 'handleAjax'));
+    }
+    
+    public function activate() {
+        // Create database tables
+        DKL_Rental_Database::createTables();
+        
+        // Create upload directories
+        $this->createUploadDirectories();
+        
+        // Set default options
+        $this->setDefaultOptions();
+        
+        // Flush rewrite rules
+        flush_rewrite_rules();
+    }
+    
+    public function deactivate() {
+        // Clean up scheduled events
+        wp_clear_scheduled_hook('dkl_rental_cleanup');
+        
+        // Flush rewrite rules
+        flush_rewrite_rules();
+    }
+    
+    private function createUploadDirectories() {
+        $upload_dir = wp_upload_dir();
+        $dkl_dirs = array(
+            $upload_dir['basedir'] . '/dkl-rental',
+            $upload_dir['basedir'] . '/dkl-rental/documents',
+            $upload_dir['basedir'] . '/dkl-rental/vehicle-photos',
+            $upload_dir['basedir'] . '/dkl-rental/signatures',
+            $upload_dir['basedir'] . '/dkl-rental/agreements'
+        );
+        
+        foreach ($dkl_dirs as $dir) {
+            if (!file_exists($dir)) {
+                wp_mkdir_p($dir);
+                // Add index.php for security
+                file_put_contents($dir . '/index.php', '<?php // Silence is golden');
+            }
+        }
+    }
+    
+    private function setDefaultOptions() {
+        add_option('dkl_rental_version', DKL_RENTAL_VERSION);
+        add_option('dkl_rental_settings', array(
+            'email_notifications' => true,
+            'auto_approve_customers' => false,
+            'require_staff_approval' => true,
+            'watermark_documents' => true,
+            'compress_images' => true
+        ));
+    }
+    
+    public function enqueuePublicScripts() {
+        wp_enqueue_style('dkl-rental-public', DKL_RENTAL_PLUGIN_URL . 'assets/css/public.css', array(), DKL_RENTAL_VERSION);
+        wp_enqueue_script('dkl-rental-public', DKL_RENTAL_PLUGIN_URL . 'assets/js/public.js', array('jquery'), DKL_RENTAL_VERSION, true);
+        
+        // Localize script for AJAX
+        wp_localize_script('dkl-rental-public', 'dklRental', array(
+            'ajaxUrl' => admin_url('admin-ajax.php'),
+            'nonce' => wp_create_nonce('dkl_rental_nonce'),
+            'pluginUrl' => DKL_RENTAL_PLUGIN_URL
+        ));
+    }
+    
+    public function enqueueAdminScripts($hook) {
+        if (strpos($hook, 'dkl-rental') !== false) {
+            wp_enqueue_style('dkl-rental-admin', DKL_RENTAL_PLUGIN_URL . 'assets/css/admin.css', array(), DKL_RENTAL_VERSION);
+            wp_enqueue_script('dkl-rental-admin', DKL_RENTAL_PLUGIN_URL . 'assets/js/admin.js', array('jquery'), DKL_RENTAL_VERSION, true);
+            
+            wp_localize_script('dkl-rental-admin', 'dklRentalAdmin', array(
+                'ajaxUrl' => admin_url('admin-ajax.php'),
+                'nonce' => wp_create_nonce('dkl_rental_admin_nonce')
+            ));
+        }
+    }
+}
+
+// Initialize the plugin
+DriveKLRental::getInstance();
