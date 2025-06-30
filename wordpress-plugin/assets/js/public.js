@@ -9,12 +9,12 @@
     window.DKLRentalApp = {
         currentView: 'role-selection',
         currentCustomer: null,
+        currentStaff: null,
         signaturePad: null,
         
         init: function() {
             this.bindEvents();
-            this.initializeSignaturePad();
-            this.calculateTotals();
+            this.loadSignaturePad();
         },
         
         bindEvents: function() {
@@ -24,6 +24,7 @@
             // Form submissions
             $(document).on('submit', '#dkl-customer-login-form', this.handleCustomerLogin.bind(this));
             $(document).on('submit', '#dkl-customer-registration-form', this.handleCustomerRegistration.bind(this));
+            $(document).on('submit', '#dkl-staff-login-form', this.handleStaffLogin.bind(this));
             $(document).on('submit', '#dkl-rental-booking-form', this.handleRentalBooking.bind(this));
             
             // Terms acceptance
@@ -82,7 +83,7 @@
                         this.showSuccess(response.data.message);
                         
                         if (response.data.customer.has_accepted_terms) {
-                            this.showView('rental-form');
+                            this.showRentalForm();
                         } else {
                             this.showView('terms-conditions');
                         }
@@ -139,6 +140,38 @@
                 error: () => {
                     this.hideLoading();
                     this.showError('Registration failed. Please try again.');
+                }
+            });
+        },
+        
+        handleStaffLogin: function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            formData.append('action', 'dkl_staff_login');
+            formData.append('nonce', dklRental.nonce);
+            
+            this.showLoading('Signing in...');
+            
+            $.ajax({
+                url: dklRental.ajaxUrl,
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: (response) => {
+                    this.hideLoading();
+                    if (response.success) {
+                        this.currentStaff = response.data.staff;
+                        this.showSuccess(response.data.message);
+                        this.showStaffDashboard();
+                    } else {
+                        this.showError(response.data.message);
+                    }
+                },
+                error: () => {
+                    this.hideLoading();
+                    this.showError('Staff login failed. Please try again.');
                 }
             });
         },
@@ -280,10 +313,351 @@
                 success: (response) => {
                     if (response.success) {
                         this.currentCustomer.has_accepted_terms = true;
-                        this.showView('rental-form');
+                        this.showRentalForm();
                     }
                 }
             });
+        },
+        
+        showRentalForm: function() {
+            const rentalFormHtml = this.generateRentalFormHtml();
+            $('#dkl-rental-form').html(rentalFormHtml);
+            this.showView('rental-form');
+            this.loadSignaturePad();
+        },
+        
+        generateRentalFormHtml: function() {
+            return `
+                <div class="dkl-form-card dkl-wide-card">
+                    <h2>Rental Booking Form</h2>
+                    <p>Please fill in all details for your vehicle rental.</p>
+                    
+                    <form id="dkl-rental-booking-form" class="dkl-form" enctype="multipart/form-data">
+                        <div class="dkl-form-section">
+                            <h3>Vehicle Details</h3>
+                            
+                            <div class="dkl-form-row">
+                                <div class="dkl-form-group">
+                                    <label for="rental_vehicle">Vehicle *</label>
+                                    <select id="rental_vehicle" name="vehicle" required>
+                                        <option value="">Select Vehicle</option>
+                                        <option value="AMG C63">AMG C63</option>
+                                        <option value="AMG G63">AMG G63</option>
+                                        <option value="BMW M3">BMW M3</option>
+                                        <option value="Audi RS6">Audi RS6</option>
+                                        <option value="BMW 520i">BMW 520i</option>
+                                        <option value="Mercedes E200">Mercedes E200</option>
+                                    </select>
+                                </div>
+                                <div class="dkl-form-group">
+                                    <label for="rental_color">Color *</label>
+                                    <select id="rental_color" name="color" required>
+                                        <option value="">Select Color</option>
+                                        <option value="Black">Black</option>
+                                        <option value="White">White</option>
+                                        <option value="Silver">Silver</option>
+                                        <option value="Red">Red</option>
+                                        <option value="Blue">Blue</option>
+                                        <option value="Gray">Gray</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="dkl-form-section">
+                            <h3>Rental Period</h3>
+                            
+                            <div class="dkl-form-row">
+                                <div class="dkl-form-group">
+                                    <label for="rental_start_date">Start Date *</label>
+                                    <input type="date" id="rental_start_date" name="start_date" required>
+                                </div>
+                                <div class="dkl-form-group">
+                                    <label for="rental_end_date">End Date *</label>
+                                    <input type="date" id="rental_end_date" name="end_date" required>
+                                </div>
+                            </div>
+                            
+                            <div class="dkl-info-display">
+                                Total Days: <span id="total_days_count">0</span> days
+                            </div>
+                        </div>
+                        
+                        <div class="dkl-form-section">
+                            <h3>Pricing Details</h3>
+                            
+                            <div class="dkl-form-row">
+                                <div class="dkl-form-group">
+                                    <label for="rental_per_day">Rental Per Day (RM) *</label>
+                                    <input type="number" id="rental_per_day" name="rental_per_day" step="0.01" required>
+                                </div>
+                                <div class="dkl-form-group">
+                                    <label for="rental_deposit">Deposit (RM) *</label>
+                                    <input type="number" id="rental_deposit" name="deposit" step="0.01" required>
+                                </div>
+                            </div>
+                            
+                            <div class="dkl-form-group">
+                                <label for="rental_discount">Discount (RM)</label>
+                                <input type="number" id="rental_discount" name="discount" step="0.01" value="0">
+                            </div>
+                            
+                            <div class="dkl-pricing-summary">
+                                <div class="dkl-price-row">
+                                    <span>Subtotal:</span>
+                                    <span id="price_subtotal">RM 0.00</span>
+                                </div>
+                                <div class="dkl-price-row">
+                                    <span>Deposit:</span>
+                                    <span id="price_deposit">RM 0.00</span>
+                                </div>
+                                <div class="dkl-price-row">
+                                    <span>Discount:</span>
+                                    <span id="price_discount">RM 0.00</span>
+                                </div>
+                                <div class="dkl-price-row dkl-total">
+                                    <span><strong>Grand Total:</strong></span>
+                                    <span id="price_grand_total"><strong>RM 0.00</strong></span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="dkl-form-section">
+                            <h3>Vehicle Photos (Upload up to 7 photos)</h3>
+                            
+                            <div class="dkl-form-row">
+                                <div class="dkl-form-group">
+                                    <label>Photo 1</label>
+                                    <div class="dkl-file-upload">
+                                        <input type="file" name="vehicle_photo_1" accept="image/*">
+                                        <div class="dkl-file-upload-text">
+                                            <span class="dkl-icon">📷</span>
+                                            <span>Upload Photo 1</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="dkl-form-group">
+                                    <label>Photo 2</label>
+                                    <div class="dkl-file-upload">
+                                        <input type="file" name="vehicle_photo_2" accept="image/*">
+                                        <div class="dkl-file-upload-text">
+                                            <span class="dkl-icon">📷</span>
+                                            <span>Upload Photo 2</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="dkl-form-row">
+                                <div class="dkl-form-group">
+                                    <label>Photo 3</label>
+                                    <div class="dkl-file-upload">
+                                        <input type="file" name="vehicle_photo_3" accept="image/*">
+                                        <div class="dkl-file-upload-text">
+                                            <span class="dkl-icon">📷</span>
+                                            <span>Upload Photo 3</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="dkl-form-group">
+                                    <label>Photo 4</label>
+                                    <div class="dkl-file-upload">
+                                        <input type="file" name="vehicle_photo_4" accept="image/*">
+                                        <div class="dkl-file-upload-text">
+                                            <span class="dkl-icon">📷</span>
+                                            <span>Upload Photo 4</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="dkl-form-row">
+                                <div class="dkl-form-group">
+                                    <label>Photo 5</label>
+                                    <div class="dkl-file-upload">
+                                        <input type="file" name="vehicle_photo_5" accept="image/*">
+                                        <div class="dkl-file-upload-text">
+                                            <span class="dkl-icon">📷</span>
+                                            <span>Upload Photo 5</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="dkl-form-group">
+                                    <label>Photo 6</label>
+                                    <div class="dkl-file-upload">
+                                        <input type="file" name="vehicle_photo_6" accept="image/*">
+                                        <div class="dkl-file-upload-text">
+                                            <span class="dkl-icon">📷</span>
+                                            <span>Upload Photo 6</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="dkl-form-group">
+                                <label>Photo 7</label>
+                                <div class="dkl-file-upload">
+                                    <input type="file" name="vehicle_photo_7" accept="image/*">
+                                    <div class="dkl-file-upload-text">
+                                        <span class="dkl-icon">📷</span>
+                                        <span>Upload Photo 7</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="dkl-form-section">
+                            <h3>Additional Details</h3>
+                            
+                            <div class="dkl-form-row">
+                                <div class="dkl-form-group">
+                                    <label for="pickup_location">Pickup Location</label>
+                                    <input type="text" id="pickup_location" name="pickup_location">
+                                </div>
+                                <div class="dkl-form-group">
+                                    <label for="return_location">Return Location</label>
+                                    <input type="text" id="return_location" name="return_location">
+                                </div>
+                            </div>
+                            
+                            <div class="dkl-form-row">
+                                <div class="dkl-form-group">
+                                    <label for="fuel_level_pickup">Fuel Level at Pickup</label>
+                                    <select id="fuel_level_pickup" name="fuel_level_pickup">
+                                        <option value="1">1/4 Tank</option>
+                                        <option value="2">1/2 Tank</option>
+                                        <option value="3">3/4 Tank</option>
+                                        <option value="4" selected>Full Tank</option>
+                                    </select>
+                                </div>
+                                <div class="dkl-form-group">
+                                    <label for="fuel_level_return">Expected Fuel Level at Return</label>
+                                    <select id="fuel_level_return" name="fuel_level_return">
+                                        <option value="1">1/4 Tank</option>
+                                        <option value="2">1/2 Tank</option>
+                                        <option value="3">3/4 Tank</option>
+                                        <option value="4" selected>Full Tank</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="dkl-form-row">
+                                <div class="dkl-form-group">
+                                    <label for="mileage_pickup">Mileage at Pickup</label>
+                                    <input type="number" id="mileage_pickup" name="mileage_pickup">
+                                </div>
+                                <div class="dkl-form-group">
+                                    <label for="mileage_return">Expected Mileage at Return</label>
+                                    <input type="number" id="mileage_return" name="mileage_return">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="dkl-form-section">
+                            <h3>Payment Information</h3>
+                            
+                            <div class="dkl-form-row">
+                                <div class="dkl-form-group">
+                                    <label for="payment_method">Payment Method</label>
+                                    <select id="payment_method" name="payment_method">
+                                        <option value="bank_transfer">Bank Transfer</option>
+                                        <option value="cash">Cash</option>
+                                        <option value="online_banking">Online Banking</option>
+                                    </select>
+                                </div>
+                                <div class="dkl-form-group">
+                                    <label for="payment_proof">Payment Proof</label>
+                                    <div class="dkl-file-upload">
+                                        <input type="file" id="payment_proof" name="payment_proof" accept="image/*">
+                                        <div class="dkl-file-upload-text">
+                                            <span class="dkl-icon">💳</span>
+                                            <span>Upload Payment Receipt</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="dkl-form-section">
+                            <h3>Digital Signature</h3>
+                            
+                            <div class="dkl-signature-container">
+                                <canvas id="signature_canvas" width="500" height="200"></canvas>
+                                
+                                <div class="dkl-signature-controls">
+                                    <button type="button" id="clear_signature" class="dkl-btn dkl-btn-outline">
+                                        Clear Signature
+                                    </button>
+                                </div>
+                                
+                                <p class="dkl-signature-note">
+                                    Please sign above to confirm your rental agreement
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <button type="submit" class="dkl-btn dkl-btn-primary dkl-btn-full">
+                            Submit Rental Request
+                        </button>
+                        
+                        <div class="dkl-form-footer">
+                            <a href="#" data-view="role-selection">← Back to Main Menu</a>
+                        </div>
+                    </form>
+                </div>
+            `;
+        },
+        
+        showStaffDashboard: function() {
+            const staffDashboardHtml = this.generateStaffDashboardHtml();
+            $('#dkl-staff-dashboard').html(staffDashboardHtml);
+            this.showView('staff-dashboard');
+        },
+        
+        generateStaffDashboardHtml: function() {
+            return `
+                <div class="dkl-form-card dkl-wide-card">
+                    <h2>Staff Dashboard</h2>
+                    <p>Welcome back, ${this.currentStaff.username}!</p>
+                    
+                    <div class="dkl-admin-section">
+                        <h3>Quick Actions</h3>
+                        <div class="dkl-quick-actions">
+                            <button class="dkl-btn dkl-btn-primary" onclick="window.open('${dklRental.pluginUrl}/../wp-admin/admin.php?page=dkl-rental', '_blank')">
+                                Open Admin Dashboard
+                            </button>
+                            <button class="dkl-btn dkl-btn-outline" data-view="role-selection">
+                                Logout
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="dkl-admin-section">
+                        <h3>Staff Features</h3>
+                        <ul>
+                            <li>✅ Customer Management</li>
+                            <li>✅ Rental Tracking</li>
+                            <li>✅ Agreement Generation</li>
+                            <li>✅ System Statistics</li>
+                        </ul>
+                        
+                        <p>Access the full admin dashboard for complete management features.</p>
+                    </div>
+                </div>
+            `;
+        },
+        
+        loadSignaturePad: function() {
+            // Load signature pad when it becomes available
+            setTimeout(() => {
+                const canvas = document.getElementById('signature_canvas');
+                if (canvas && typeof SignaturePad !== 'undefined') {
+                    this.signaturePad = new SignaturePad(canvas, {
+                        backgroundColor: 'rgba(255,255,255,1)',
+                        penColor: 'rgb(0, 0, 0)'
+                    });
+                }
+            }, 500);
         },
         
         calculateTotalDays: function() {
