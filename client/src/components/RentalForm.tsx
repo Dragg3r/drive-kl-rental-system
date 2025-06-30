@@ -34,7 +34,7 @@ const rentalFormSchema = z.object({
   rentalPerDay: z.string().min(1, "Rental per day is required"),
   deposit: z.string().min(1, "Deposit is required"),
   discount: z.string().default("0"),
-  grandTotal: z.string().min(1, "Grand total is required"),
+  grandTotal: z.union([z.string(), z.number()]).transform(val => String(val)),
   signatureData: z.string().optional(),
   vehiclePhotos: z.array(z.any()).optional(),
   paymentProof: z.any().optional(),
@@ -173,15 +173,18 @@ export default function RentalForm({ onViewChange, onComplete }: RentalFormProps
     console.log("Payment proof:", paymentProof);
     console.log("Signature data:", signatureData);
     
-    // Ensure all required data is included
-    const completeData = {
+    // Create submission data with proper validation bypassing
+    const submissionData = {
       ...data,
-      vehiclePhotos: vehiclePhotos,
-      paymentProof: paymentProof,
-      signatureData: signatureData
+      // Ensure vehiclePhotos are included even if empty
+      vehiclePhotos: vehiclePhotos.length > 0 ? vehiclePhotos : [],
+      // Make payment proof optional
+      paymentProof: paymentProof || null,
+      // Include signature data
+      signatureData: signatureData || ""
     };
     
-    createRentalMutation.mutate(completeData);
+    createRentalMutation.mutate(submissionData);
   };
 
   const watchedValues = form.watch();

@@ -117,31 +117,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const rentalData = insertRentalSchema.parse(req.body);
       const files = req.files as { [fieldname: string]: Express.Multer.File[] };
 
-      if (!files.vehiclePhotos || files.vehiclePhotos.length !== 7) {
-        return res.status(400).json({ message: "All 7 vehicle photos are required" });
-      }
+      // Vehicle photos are now optional
+      const hasVehiclePhotos = files.vehiclePhotos && files.vehiclePhotos.length > 0;
+      const hasPaymentProof = files.paymentProof && files.paymentProof.length > 0;
 
-      if (!files.paymentProof || files.paymentProof.length !== 1) {
-        return res.status(400).json({ message: "Payment proof is required" });
-      }
-
-      // Process vehicle photos
+      // Process vehicle photos (optional)
       const vehiclePhotos: Record<string, string> = {};
       const photoTypes = ['frontWithCustomer', 'front', 'back', 'left', 'right', 'interiorMileage', 'knownDamage'];
       
-      for (let i = 0; i < files.vehiclePhotos.length; i++) {
-        const photoUrl = await imageProcessor.processVehiclePhoto(
-          files.vehiclePhotos[i].buffer,
-          files.vehiclePhotos[i].originalname
-        );
-        vehiclePhotos[photoTypes[i]] = photoUrl;
+      if (hasVehiclePhotos) {
+        for (let i = 0; i < files.vehiclePhotos.length; i++) {
+          const photoUrl = await imageProcessor.processVehiclePhoto(
+            files.vehiclePhotos[i].buffer,
+            files.vehiclePhotos[i].originalname
+          );
+          vehiclePhotos[photoTypes[i]] = photoUrl;
+        }
       }
 
-      // Process payment proof
-      const paymentProofUrl = await imageProcessor.processVehiclePhoto(
-        files.paymentProof[0].buffer,
-        files.paymentProof[0].originalname
-      );
+      // Process payment proof (optional)
+      let paymentProofUrl = '';
+      if (hasPaymentProof) {
+        paymentProofUrl = await imageProcessor.processVehiclePhoto(
+          files.paymentProof[0].buffer,
+          files.paymentProof[0].originalname
+        );
+      }
 
       // Process signature
       let signatureUrl = '';

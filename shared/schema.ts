@@ -30,9 +30,9 @@ export const rentals = pgTable("rentals", {
   deposit: decimal("deposit", { precision: 10, scale: 2 }).notNull(),
   discount: decimal("discount", { precision: 10, scale: 2 }).default("0").notNull(),
   grandTotal: decimal("grand_total", { precision: 10, scale: 2 }).notNull(),
-  vehiclePhotos: jsonb("vehicle_photos").notNull(), // URLs of 7 photos
-  paymentProofUrl: text("payment_proof_url").notNull(),
-  signatureUrl: text("signature_url").notNull(),
+  vehiclePhotos: jsonb("vehicle_photos").default({}), // URLs of photos (optional)
+  paymentProofUrl: text("payment_proof_url").default(""),
+  signatureUrl: text("signature_url").default(""),
   agreementPdfUrl: text("agreement_pdf_url"),
   status: text("status").notNull().default("pending"), // pending, completed
   createdAt: timestamp("created_at").defaultNow().notNull(),
