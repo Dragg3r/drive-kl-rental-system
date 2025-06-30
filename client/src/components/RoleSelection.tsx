@@ -10,7 +10,7 @@ export default function RoleSelection({ onViewChange }: RoleSelectionProps) {
     <div className="max-w-md mx-auto animate-fade-in">
       <div className="glass rounded-2xl p-8 text-center">
         <div className="flex items-center justify-center mb-6">
-          <img src={dklLogoPath} alt="DKL Logo" className="w-32 h-28 object-contain" />
+          <img src={dklLogoPath} alt="DKL Logo" className="w-44 h-36 object-contain" />
         </div>
         <h2 className="text-2xl font-bold text-slate-800 mb-2">Drive KL Rental System</h2>
         <p className="text-slate-600 mb-8">By Akib</p>
