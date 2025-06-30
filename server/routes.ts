@@ -116,12 +116,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       // Transform form data to match schema expectations
       const transformedData = {
-        ...req.body,
         customerId: parseInt(req.body.customerId),
+        vehicle: req.body.vehicle,
+        color: req.body.color,
+        mileageLimit: parseInt(req.body.mileageLimit.replace(/[^\d]/g, '')) || 0, // Extract number from "170 KM"
+        extraMileageCharge: (parseFloat(req.body.extraMileageCharge.replace(/[^\d.]/g, '')) || 0).toString(), // Extract number from "RM 2.50"
         fuelLevel: parseInt(req.body.fuelLevel),
-        totalDays: parseInt(req.body.totalDays),
         startDate: new Date(req.body.startDate),
         endDate: new Date(req.body.endDate),
+        totalDays: parseInt(req.body.totalDays),
         rentalPerDay: req.body.rentalPerDay,
         deposit: req.body.deposit,
         discount: req.body.discount || "0",
