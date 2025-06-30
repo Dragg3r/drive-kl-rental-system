@@ -1,0 +1,67 @@
+workflows:
+  ios-development-build:
+    name: Drive KL Rental iOS Development Build
+    instance_type: mac_mini_m1
+    max_build_duration: 60
+    environment:
+      vars:
+        BUNDLE_ID: "com.drivekl.rental"
+        XCODE_WORKSPACE: "ios/App/App.xcworkspace"
+        XCODE_SCHEME: "App"
+      node: 18.17.0
+      xcode: latest
+      cocoapods: default
+    cache:
+      cache_paths:
+        - $CM_BUILD_DIR/node_modules
+        - ~/.npm
+        - ~/Library/Caches/CocoaPods
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: main
+          include: true
+          source: true
+    scripts:
+      - name: Install Node dependencies
+        script: |
+          npm ci
+      - name: Build web application
+        script: |
+          npm run build
+      - name: Sync Capacitor with iOS
+        script: |
+          npx cap sync ios
+      - name: Install iOS dependencies
+        script: |
+          cd ios/App && pod install
+      - name: Build iOS application (unsigned)
+        script: |
+          cd ios/App
+          xcodebuild \
+            -workspace App.xcworkspace \
+            -scheme App \
+            -configuration Debug \
+            -destination 'generic/platform=iOS' \
+            -archivePath $CM_BUILD_DIR/App.xcarchive \
+            archive
+      - name: Export unsigned IPA
+        script: |
+          cd ios/App
+          xcodebuild \
+            -exportArchive \
+            -archivePath $CM_BUILD_DIR/App.xcarchive \
+            -exportPath $CM_BUILD_DIR \
+            -exportOptionsPlist ../../export-options-unsigned.plist
+    artifacts:
+      - "*.ipa"
+      - "App.xcarchive"
+      - ios/App/build/Build/Logs/
+    publishing:
+      email:
+        recipients:
+          - your.email@example.com
+        notify:
+          success: true
+          failure: true

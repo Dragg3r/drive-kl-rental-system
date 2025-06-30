@@ -34,6 +34,9 @@ workflows:
       - name: Build web app
         script: |
           npm run build
+      - name: Sync Capacitor
+        script: |
+          npx cap sync ios
       - name: Setup iOS dependencies
         script: |
           # Install CocoaPods dependencies
@@ -41,17 +44,14 @@ workflows:
       - name: Set up keychain
         script: |
           keychain initialize
-      - name: Set up provisioning profiles
+      - name: Set up provisioning profiles (Development)
         script: |
           app-store-connect fetch-signing-files $BUNDLE_ID \
-            --type IOS_APP_STORE \
+            --type IOS_APP_DEVELOPMENT \
             --create
       - name: Set up signing certificate
         script: |
           keychain add-certificates
-      - name: Increment build number
-        script: |
-          agvtool new-version -all $(($(app-store-connect get-latest-testflight-build-number "$APP_STORE_CONNECT_APP_ID") + 1))
       - name: Build iOS app
         script: |
           xcode-project build-ipa \
@@ -65,13 +65,7 @@ workflows:
     publishing:
       email:
         recipients:
-          - akib@drivekl.com
+          - your.email@example.com
         notify:
           success: true
           failure: true
-      app_store_connect:
-        auth: integration
-        submit_to_testflight: true
-        beta_groups:
-          - App Store Connect Users
-        submit_to_app_store: false
