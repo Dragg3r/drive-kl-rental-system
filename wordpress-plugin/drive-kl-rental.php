@@ -52,24 +52,50 @@ class DriveKLRental {
     }
     
     private function loadDependencies() {
-        require_once DKL_RENTAL_PLUGIN_PATH . 'includes/class-database.php';
-        require_once DKL_RENTAL_PLUGIN_PATH . 'includes/class-customer.php';
-        require_once DKL_RENTAL_PLUGIN_PATH . 'includes/class-rental.php';
-        require_once DKL_RENTAL_PLUGIN_PATH . 'includes/class-pdf-generator.php';
-        require_once DKL_RENTAL_PLUGIN_PATH . 'includes/class-image-processor.php';
-        require_once DKL_RENTAL_PLUGIN_PATH . 'includes/class-email-service.php';
-        require_once DKL_RENTAL_PLUGIN_PATH . 'admin/class-admin.php';
-        require_once DKL_RENTAL_PLUGIN_PATH . 'public/class-public.php';
-        require_once DKL_RENTAL_PLUGIN_PATH . 'includes/class-ajax-handler.php';
-        require_once DKL_RENTAL_PLUGIN_PATH . 'includes/class-shortcodes.php';
+        $files = array(
+            'includes/class-database.php',
+            'includes/class-customer.php',
+            'includes/class-rental.php',
+            'includes/class-pdf-generator.php',
+            'includes/class-image-processor.php',
+            'includes/class-email-service.php',
+            'includes/class-ajax-handler.php',
+            'includes/class-shortcodes.php',
+            'admin/class-admin.php',
+            'public/class-public.php'
+        );
+        
+        foreach ($files as $file) {
+            $file_path = DKL_RENTAL_PLUGIN_PATH . $file;
+            if (file_exists($file_path)) {
+                require_once $file_path;
+            } else {
+                error_log("DKL Rental Plugin: Missing file - $file_path");
+            }
+        }
     }
     
     private function initializeComponents() {
-        new DKL_Rental_Database();
-        new DKL_Rental_Admin();
-        new DKL_Rental_Public();
-        new DKL_Rental_Ajax_Handler();
-        new DKL_Rental_Shortcodes();
+        // Initialize components only if classes exist
+        if (class_exists('DKL_Rental_Database')) {
+            new DKL_Rental_Database();
+        }
+        
+        if (class_exists('DKL_Rental_Admin')) {
+            new DKL_Rental_Admin();
+        }
+        
+        if (class_exists('DKL_Rental_Public')) {
+            new DKL_Rental_Public();
+        }
+        
+        if (class_exists('DKL_Rental_Ajax_Handler')) {
+            new DKL_Rental_Ajax_Handler();
+        }
+        
+        if (class_exists('DKL_Rental_Shortcodes')) {
+            new DKL_Rental_Shortcodes();
+        }
     }
     
     private function addHooks() {
@@ -80,8 +106,13 @@ class DriveKLRental {
     }
     
     public function activate() {
+        // Load dependencies first
+        $this->loadDependencies();
+        
         // Create database tables
-        DKL_Rental_Database::createTables();
+        if (class_exists('DKL_Rental_Database')) {
+            DKL_Rental_Database::createTables();
+        }
         
         // Create upload directories
         $this->createUploadDirectories();
